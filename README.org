@@ -1,0 +1,53 @@
+#+TITLE: alsd
+
+~alsd~ is a relatively simple Common Lisp program (with a Rust helper)
+which updates the display backlight brightness in accordance with
+ambient light sensor values. It requires [[https://github.com/goose121/als_bus][als_bus]] in order to
+function. Configuration is mainly done by setting dynamic variable
+values; most of the variable declarations should be near the
+beginnings of files.
+
+* Usage
+~alsd~ is started using either the ~START-DAEMON~ or ~ENTRY-POINT~
+function. ~START-DAEMON~ is mainly meant for interactive usage, while
+~ENTRY-POINT~ is the entry point for creating an executable image,
+which can be done by soft-linking ~alsd.asd~ to a location where ASDF
+can find it, then executing ~(asdf:make :alsd)~ at a REPL. The first
+argument to either ~START-DAEMON~ or to the generated executable
+should be the path to the ~alsd-handler~ executable. Note that the
+~alsd-handler~ executable must have certain permissions, detailed in
+the [[* Installation][Installation section]].
+
+* Building
+
+** Building the helper
+#+BEGIN_SRC sh
+  $ cd /path/to/alsd/sources
+  $ cd alsd-helper
+  $ cargo build --release
+#+END_SRC
+
+** Building a standalone alsd executable (optional)
+These instructions are for SBCL, but they should work for any Common
+Lisp implementation by simply replacing ~sbcl~ with that Lisp
+interpreter's executable, and fiddling with its arguments somewhat to
+make it evaluate ~(asdf:make :alsd)~.
+#+BEGIN_SRC sh
+  $ cd /path/to/alsd/sources
+  # Note: this may need to be replaced with a different path depending
+  # on your local value of asdf:*central-registry*
+  $ ln -s alsd.asd ~/common-lisp/
+  $ sbcl --eval "(asdf:make :alsd)"
+#+END_SRC
+
+* Installation
+#+BEGIN_SRC sh
+  $ cd /path/to/alsd/sources
+  # This can go anywhere you want; its path just needs to be passed to
+  # alsd as an argument
+  $ sudo cp alsd-helper/target/release/alsd-helper /usr/local/sbin/
+  # Currently this is implemented as a setuid executable; in the future,
+  # it may be preferable to use capabilites (specifically CAP_NET_ADMIN)
+  # for security reasons
+  $ sudo chmod u+s /usr/local/sbin/alsd-helper
+#+END_SRC
