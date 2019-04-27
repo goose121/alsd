@@ -16,7 +16,7 @@ can find it, then executing ~(asdf:make :alsd)~ at a REPL. The first
 argument to either ~START-DAEMON~ or to the generated executable
 should be the path to the ~alsd-handler~ executable. Note that the
 ~alsd-handler~ executable must have certain permissions, detailed in
-the [[* Installation][Installation section]].
+the [[#Installation][Installation section]].
 
 * Building
 
@@ -41,6 +41,9 @@ make it evaluate ~(asdf:make :alsd)~.
 #+END_SRC
 
 * Installation
+:PROPERTIES:
+:CUSTOM_ID: Installation
+:END:
 #+BEGIN_SRC sh
   $ cd /path/to/alsd/sources
   # This can go anywhere you want; its path just needs to be passed to
