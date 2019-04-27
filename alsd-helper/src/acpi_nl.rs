@@ -1,4 +1,9 @@
-mod ids {
+use crate::errors::*;
+use std::ffi::CString;
+ use netlink_rust::generic::*;
+use netlink_rust::Socket;
+
+pub mod ids {
     use super::*;
     use once_cell::sync::OnceCell;
 
@@ -47,7 +52,7 @@ mod ids {
 
 /// Represents an ACPI event structure.
 #[derive(Debug)]
-struct AcpiEvent {
+pub struct AcpiEvent {
     pub device_class: CString,
     pub bus_id: CString,
     pub evt_type: u32,
@@ -100,5 +105,3 @@ impl From<Vec<u8>> for AcpiEvent {
         raw_event.into()
     }
 }
-
-const ACPI_EVENT_IDENTIFIER: u16 = 1;

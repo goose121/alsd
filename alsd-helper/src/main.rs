@@ -30,10 +30,8 @@ extern crate nix;
 
 use futures::{Future, Stream};
 use netlink_rust::generic::Message as GenlMsg;
-use netlink_rust::generic::*;
-use netlink_rust::{Message, Protocol, Socket};
+use netlink_rust::{Socket, Protocol, Message};
 use std::env;
-use std::ffi::CString;
 use std::io::{prelude::*, Cursor};
 use std::os::unix::net::UnixStream;
 
@@ -43,7 +41,10 @@ use self::nl_tokio::AsyncNlSocket;
 mod drop_privs;
 use self::drop_privs::drop_privs;
 
-mod errors {
+mod acpi_nl;
+use self::acpi_nl::AcpiEvent;
+
+pub mod errors {
     error_chain! {
         errors {
             GroupNotFound {
@@ -65,11 +66,13 @@ pub use self::errors::*;
 fn establish_nl_socket() -> Result<AsyncNlSocket> {
     let mut sock = Socket::new(Protocol::Generic)?;
 
-    let group_id = ids::mcast_group_id(&mut sock)?;
+    let group_id = acpi_nl::ids::mcast_group_id(&mut sock)?;
     sock.multicast_group_subscribe(group_id)?;
 
     AsyncNlSocket::new(sock)
 }
+
+const ACPI_EVENT_IDENTIFIER: u16 = 1;
 
 fn handle_acpi_events<F>(nl_sock: AsyncNlSocket, mut handler: F)
 where
@@ -95,7 +98,7 @@ where
                     Ok(())
                 }
             })
-            .unwrap()
+            .map_err(|e| eprintln!("{}", e))
     );
 }
 
