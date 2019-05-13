@@ -84,7 +84,6 @@ where
                 if let Message::Data(msg) = msg {
                     let mut msg_data = Cursor::new(msg.data);
                     let genl_msg = GenlMsg::parse(&mut msg_data)?;
-                    println!("{}", genl_msg);
                     genl_msg
                         .attributes
                         .iter()
