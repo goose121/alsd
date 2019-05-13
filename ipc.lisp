@@ -28,34 +28,37 @@
 (defun handle-client (client)
   (let ((req (uiop:with-safe-io-syntax (:package :alsd)
                (read client))))
-    (if (not (listp req))
-        (warn "IPC operation ~s is not a list" req)
-        (case (first req)
-          (update-screen (update-screen)
-                         nil)
-          (adjust-brightness (incf *user-brightness-percent* (second req))
-                             (update-screen)
-                             (format client "~a~%" *user-brightness-percent*)
-                             (finish-output client)
-                             nil)
-          (stop t)
-          (otherwise (warn "Invalid IPC operation ~s" (first req))
-                     nil)))))
-
 (defun handle-ipc ()
   "Handle IPC requests in a loop."
+    ;; TODO: improve error message
+    (check-type req list)
+    (format
+     client
+     "~A"
+     (case (first req)
+       (update-screen t)
+       (adjust-brightness
+        (incf *user-brightness-percent* (second req)))
+       (stop (throw 'exit (values)))
+       (otherwise (error "Invalid IPC operation ~s" (first req)))))
+    (update-screen)))
+
   ;; Cache the max backlight value because the cache isn't thread-safe
   (max-backlight)
-  (unwind-protect
-       (with-open-socket (ctl-socket :address-family :local
-                                     :type :stream
-                                     :connect :passive
-                                     :local-filename *control-socket-path*)
-         (listen-on ctl-socket :backlog 5)
-         (loop until
-              (let ((client (accept-connection ctl-socket :wait t)))
-                (unwind-protect (handle-client client)
-                  (finish-output client)
-                  (shutdown client :read t :write t)
-                  (close client)))))
-    (delete-file *control-socket-path*)))
+  (catch 'exit
+    (unwind-protect
+         (with-open-socket
+             (ctl-socket :address-family :local
+                         :type :stream
+                         :connect :passive
+                         :local-filename *control-socket-path*)
+           (listen-on ctl-socket :backlog 5)
+           (loop
+              (handler-case
+                  (let ((client (accept-connection ctl-socket :wait t)))
+                    (unwind-protect (handle-client client)
+                      (finish-output client)
+                      (shutdown client :read t :write t)
+                      (close client)))
+                (error (err) (format *error-output* "~A~%" err)))))
+      (delete-file *control-socket-path*))))
