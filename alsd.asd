@@ -20,17 +20,17 @@
   :author "goose121 (https://github.com/goose121)"
   :license "GPLv3-or-later"
   :depends-on (#:external-program
-			   #:cl-arrows
-			   #:anaphora
-			   #:iolib
-			   #:bordeaux-threads
-			   #:unix-opts)
+               #:cl-arrows
+               #:anaphora
+               #:iolib
+               #:bordeaux-threads
+               #:unix-opts)
   :components ((:file "packages")
-			   (:file "cubic-interp" :depends-on ("packages"))
-			   (:file "backlight" :depends-on ("packages"))
-			   (:file "ipc" :depends-on ("backlight" "packages"))
-			   (:file "main" :depends-on
-					  ("cubic-interp" "backlight" "ipc" "packages")))
+               (:file "cubic-interp" :depends-on ("packages"))
+               (:file "backlight" :depends-on ("packages"))
+               (:file "ipc" :depends-on ("backlight" "packages"))
+               (:file "main" :depends-on
+                      ("cubic-interp" "backlight" "ipc" "packages")))
   :build-operation "program-op" ;; leave as is
   :build-pathname "alsd"
   :entry-point "alsd:entry-point")
