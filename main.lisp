@@ -20,14 +20,28 @@
   (update-alr)
   (setf *als-interpolation-func* (apply #'cubic-spline-function *alr*)))
 
+(defvar *helper-process*)
+
+(defun stop-helper ()
+  (external-program:signal-process *helper-process* :hangup))
+
+(defun start-helper (helper-path)
+  (setf *helper-process*
+        (external-program:start
+         helper-path
+         `(,*control-socket-path*)
+         :error t
+         :status-hook
+         (lambda (proc)
+           (format *error-output*
+                   "Warning: helper process exited~%"))))
+  (exit-hooks:add-exit-hook #'stop-helper))
+
 (defun start-daemon (helper-path)
   "Do everything required to start up the daemon."
   (setup-alsd)
   (update-screen)
-  (external-program:start
-   helper-path
-   `(,*control-socket-path*))
-  (handle-ipc))
+  (handle-ipc (lambda () (start-helper helper-path))))
 
 (defun entry-point ()
   "Parse the command-line arguments and start the daemon; at present,

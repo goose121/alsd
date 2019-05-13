@@ -28,8 +28,6 @@
 (defun handle-client (client)
   (let ((req (uiop:with-safe-io-syntax (:package :alsd)
                (read client))))
-(defun handle-ipc ()
-  "Handle IPC requests in a loop."
     ;; TODO: improve error message
     (check-type req list)
     (format
@@ -43,6 +41,9 @@
        (otherwise (error "Invalid IPC operation ~s" (first req)))))
     (update-screen)))
 
+(defun handle-ipc (run-with-socket)
+  "Handle IPC requests in a loop. Once the socket is open, run the
+function RUN-WITH-SOCKET."
   ;; Cache the max backlight value because the cache isn't thread-safe
   (max-backlight)
   (catch 'exit
@@ -53,6 +54,7 @@
                          :connect :passive
                          :local-filename *control-socket-path*)
            (listen-on ctl-socket :backlog 5)
+           (funcall run-with-socket)
            (loop
               (handler-case
                   (let ((client (accept-connection ctl-socket :wait t)))

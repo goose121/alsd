@@ -20,11 +20,12 @@
   :author "goose121 (https://github.com/goose121)"
   :license "GPLv3-or-later"
   :depends-on (#:external-program
-               #:cl-arrows
-               #:anaphora
-               #:iolib
-               #:bordeaux-threads
-               #:unix-opts)
+			   #:cl-arrows
+			   #:anaphora
+			   #:iolib
+			   #:bordeaux-threads
+			   #:unix-opts
+               #:exit-hooks)
   :components ((:file "packages")
                (:file "cubic-interp" :depends-on ("packages"))
                (:file "backlight" :depends-on ("packages"))
