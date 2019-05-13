@@ -38,6 +38,8 @@ only the first argument (the path to the helper) is used."
                               (uiop/image:die -1 "~a" c))))
     (let ((args (uiop:command-line-arguments)))
       (unless (= (length args) 1)
-        (error "Incorrect number of arguments~%Usage: ~a <helper-path>~%"
-               (uiop/image:argv0)))
+        (error
+         "Incorrect number of arguments~@
+          Usage: ~a <helper-path>~%"
+         (uiop/image:argv0)))
       (start-daemon (nth 1 args)))))
