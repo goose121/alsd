@@ -33,8 +33,8 @@
          :error t
          :status-hook
          (lambda (proc)
-           (format *error-output*
-                   "Warning: helper process exited~%"))))
+           (declare (ignore proc))
+           (format *error-output* "Warning: helper process exited~%"))))
   (exit-hooks:add-exit-hook #'stop-helper))
 
 (defun start-daemon (helper-path)
