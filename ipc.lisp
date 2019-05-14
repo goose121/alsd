@@ -37,7 +37,7 @@
        (update-screen t)
        (adjust-brightness
         (incf *user-brightness-percent* (second req)))
-       (stop (throw 'exit (values)))
+       ((stop exit quit) (throw 'exit (values)))
        (otherwise (error "Invalid IPC operation ~s" (first req)))))
     (update-screen)))
 
