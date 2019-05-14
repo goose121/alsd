@@ -18,6 +18,21 @@ should be the path to the ~alsd-handler~ executable. Note that the
 ~alsd-handler~ executable must have certain permissions, detailed in
 the [[#Installation][Installation section]].
 
+** IPC
+~alsd~ can be controlled via a socket, which is created by default at
+~/tmp/alsd.sock~. It currently supports 3 commands: ~(update-screen)~,
+which updates the screen brightness in accordance with current ambient
+light conditions, and writes ~T~ back on the socket;
+~(adjust-brightness AMOUNT)~, which adjusts the user-supplied
+brightness factor (which is multiplied by the factor associated with
+the current ambient brightness to obtain the actual brightness
+percentage) by ~AMOUNT~ percentage points and writes the new
+brightness value back on the socket; and ~(stop)~, which causes the
+daemon to shut down gracefully, deleting its socket in the
+process. Note that it closes the socket after each command, and that
+the commands are not processed in parallel, so it can only handle one
+request at a time.
+
 * Building
 
 ** Building the helper
