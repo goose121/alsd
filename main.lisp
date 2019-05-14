@@ -28,7 +28,7 @@
 (defun start-helper (helper-path)
   (setf *helper-process*
         (external-program:start
-         helper-path
+         (truename helper-path)
          `(,*control-socket-path*)
          :error t
          :status-hook
@@ -56,4 +56,4 @@ only the first argument (the path to the helper) is used."
          "Incorrect number of arguments~@
           Usage: ~a <helper-path>~%"
          (uiop/image:argv0)))
-      (start-daemon (nth 1 args)))))
+      (start-daemon (parse-namestring (nth 1 args))))))
