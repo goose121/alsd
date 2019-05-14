@@ -34,6 +34,7 @@ use netlink_rust::{Socket, Protocol, Message};
 use std::env;
 use std::io::{prelude::*, Cursor};
 use std::os::unix::net::UnixStream;
+use nix::sys::socket::{SockAddr, UnixAddr};
 
 mod nl_tokio;
 use self::nl_tokio::AsyncNlSocket;
@@ -101,10 +102,26 @@ where
     );
 }
 
-fn process_event(event: AcpiEvent) -> Result<()> {
-    let ctl_sock_path: String = env::args().next().ok_or(ErrorKind::NoSocket)?;
+fn process_event(event: AcpiEvent, ctl_sock_addr: &SockAddr) -> Result<()> {
+
+    fn connect_ctl_sock(ctl_sock_addr: &SockAddr) -> Result<UnixStream> {
+        use nix::sys::socket::*;
+        use std::os::unix::io::FromRawFd;
+
+        let ctl_sock_fd = socket(AddressFamily::Unix,
+                                 SockType::Stream,
+                                 SockFlag::empty(),
+                                 None)?;
+
+        connect(ctl_sock_fd, ctl_sock_addr)?;
+
+        unsafe {
+            Ok(UnixStream::from_raw_fd(ctl_sock_fd))
+        }
+    }
+
     let mut ctl_stream =
-        UnixStream::connect(ctl_sock_path).chain_err(|| "Could not connect to control socket")?;
+        connect_ctl_sock(ctl_sock_addr)?;
 
     if event.bus_id.as_bytes().starts_with(b"ACPI0008") && event.evt_type == 0x80 {
         write!(ctl_stream, "(UPDATE-SCREEN)")?;
@@ -117,6 +134,10 @@ fn main() -> Result<()> {
     let nl_sock = establish_nl_socket()?;
 
     drop_privs()?;
-    handle_acpi_events(nl_sock, move |evt| process_event(evt));
+
+    let ctl_sock_name: String = env::args().nth(1).ok_or(ErrorKind::NoSocket)?;
+    let ctl_sock_addr = SockAddr::Unix(UnixAddr::new_abstract(ctl_sock_name.as_bytes())?);
+
+    handle_acpi_events(nl_sock, move |evt| process_event(evt, &ctl_sock_addr));
     Ok(())
 }

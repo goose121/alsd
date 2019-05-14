@@ -29,7 +29,7 @@
   (setf *helper-process*
         (external-program:start
          (truename helper-path)
-         `(,*control-socket-path*)
+         `(,*control-socket-name*)
          :error t
          :status-hook
          (lambda (proc)
