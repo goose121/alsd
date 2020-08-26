@@ -121,9 +121,14 @@ interpolation input."
                                        (* ,ti ,di))))))))))
     `(cond
        ,@(loop
-            for poly in (cubic-spline-coeffs xs ys)
-            for max across (window xs 1)
-            collecting `((< ,x ,max) ,(apply #'cubic x poly))))))
+           for (poly . rest) on (cubic-spline-coeffs xs ys)
+           for max across (window xs 1)
+           ;; The last clause should have no upper bound; otherwise,
+           ;; any input above the last MAX would produce nil
+           for test = (if (endp rest)
+                          't
+                          `(< ,x ,max))
+           collecting `(,test ,(apply #'cubic x poly))))))
 
 (defun cubic-spline-function (xs ys)
   "Generate a function which interpolates between the points specified
