@@ -15,16 +15,22 @@
 
 (in-package :alsd)
 
-(defparameter *control-socket-name* "alsd-ctl")
+(defparameter *control-socket-name* "alsd-ctl"
+  "The name of the abstract socket used to control alsd.")
 
-(defvar *user-brightness-percent* 100)
+(defvar *user-brightness-percent* 100
+  "The percent brightness set by the user (e.g. with brightness
+  keys).")
 
 (defun update-screen ()
+  "Update the screen brightness, taking *USER-BRIGHTNESS-PERCENT* into
+account."
   (update-backlight (get-ali)
                     (* (max-backlight)
                        (/ *user-brightness-percent* 100))))
 
 (defun handle-client (client)
+  "Handle a request from the stream CLIENT."
   (let ((req (uiop:with-safe-io-syntax (:package :alsd)
                (read client))))
     ;; TODO: improve error message
@@ -41,6 +47,8 @@
     (update-screen)))
 
 (defmacro with-bound-socket ((socket &rest args) &body body)
+  "Execute BODY with SOCKET bound to an address obtained by passing
+ARGS to ENSURE-SOCKET."
   `(unwind-protect
         (progn
           (bind-address ,socket (ensure-address ,@args))

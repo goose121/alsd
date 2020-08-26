@@ -16,14 +16,21 @@
 (in-package :alsd)
 
 (defparameter *ali-path*
-  "/sys/bus/acpi/devices/ACPI0008:00/als_bus/ali")
+  "/sys/bus/acpi/devices/ACPI0008:00/als_bus/ali"
+  "The path to a file which can be used to read the current
+  illuminance from the ambient light sensor.")
 (defparameter *alr-path*
-  "/sys/bus/acpi/devices/ACPI0008:00/als_bus/alr")
+  "/sys/bus/acpi/devices/ACPI0008:00/als_bus/alr"
+  "The path to a file which can be used to read the current response
+  table from the ambient light sensor.")
 (defparameter *backlight-path*
-  "/sys/class/backlight/intel_backlight/brightness")
+  "/sys/class/backlight/intel_backlight/brightness"
+  "The path to a file which can be used to read or write the backlight
+  brightness.")
 (defparameter *max-backlight-path*
-  "/sys/class/backlight/intel_backlight/max_brightness")
-
+  "/sys/class/backlight/intel_backlight/max_brightness"
+  "The path to a file which can be used to read the maximum possible
+  backlight brightness.")
 
 (defun read-acpi-package (stream)
   "Read an ACPI package representation from STREAM, where each package
@@ -55,7 +62,7 @@ square brackets."
       (error "Expecting package literal or integer, found ~S" char)))))
 
 (defun read-alr ()
-  "Reads the ALR table and returns it as a two-item list, containing
+  "Read the ALR table and return it as a two-item list, containing
 first a vector of ALS readings, then a vector of their corresponding
 backlight adjustment percentages."
   (->> (with-open-file (alr-file *alr-path*)
@@ -71,18 +78,25 @@ backlight adjustment percentages."
 ;;; TODO: Either remove *alr* and update-alr altogether, or make them
 ;;; update *als-interpolation-func* appropriately somehow.
 
-(defvar *alr* nil)
+(defvar *alr* nil
+  "The current ambient light response table, stored as (XS YS), where
+  XS contains illuminance values and YS contains their corresponding
+  backlight values.")
 
 (defun update-alr ()
-  "Reads the ALR table and updates the stored value."
+  "Read the ALR table and update the stored value."
   (setf *alr* (read-alr)))
 
-(defvar *als-interpolation-func* nil)
+(defvar *als-interpolation-func* nil
+  "The function used to convert illuminance values to backlight
+  values, calculated via *ALR*.")
 
-(defvar *max-backlight* nil)
+(defvar *max-backlight* nil
+  "The cached maximum backlight value. (MAX-BACKLIGHT) should be used
+  instead so this value can be initialized if necessary.")
 
 (defun max-backlight ()
-  "Gets the maximum backlight value or returns the cached value for
+  "Get the maximum backlight value or return the cached value for
 it."
   (or
    *max-backlight*
@@ -109,7 +123,7 @@ it."
 
 (defun update-backlight (ali-reading desired-brightness)
   "Update the backlight based on the given illuminance reading, using
-*als-interpolation-func* to get the backlight adjustment value."
+*ALS-INTERPOLATION-FUNC* to get the backlight adjustment value."
   ;; TODO: Adjust based on the user's desired brightness, not based on
   ;; the maximum
   (let ((adjustment (/ (funcall *als-interpolation-func* ali-reading) 100)))

@@ -29,7 +29,7 @@ VEC."
      collecting (window vec i (+ i length))))
 
 (defgeneric g-rest (sequence)
-  (:documentation "Returns a sequence containing all of the elements of
+  (:documentation "Return a sequence containing all of the elements of
   SEQUENCE except the first."))
 (defmethod g-rest ((sequence list)) (cdr sequence))
 (defmethod g-rest ((sequence vector)) (window sequence 1))
@@ -50,11 +50,17 @@ RESULT-SEQUENCES is set to the corresponding return value."
               (apply function (mapcar (lambda (s) (elt s 0)) sequences))))))
 
 (defun elt+ (sequence &rest offsets)
+  "Get the element of SEQUENCE at the index obtained by summing
+OFFSETS."
   (elt sequence (apply #'+ offsets)))
 
-;; Stolen^H^H^H^H^H^H^H Inspiration taken from
+;; Implementation taken from
 ;; https://en.wikipedia.org/wiki/Spline_(mathematics)
 (defun cubic-spline-coeffs (xs ys)
+  "Calculate the coefficients for a cubic spline with X values
+specified by XS and the corresponding Y values by YS, returning a list
+of cubic polynomials where each polynomial a + b(x - xi) + c(x - xi)^2 +
+d(x - xi)^3 is denoted by a list (A B C D XI)."
   (let* ((k (- (length ys) 1))
          (len (1+ k))
          (a (make-array `(,len) :initial-contents ys))
@@ -101,6 +107,9 @@ RESULT-SEQUENCES is set to the corresponding return value."
     (map 'list #'list a b c d xs)))
 
 (defun cubic-spline-body (x xs ys)
+  "Generate the body of a function which will interpolate between the
+points specified by XS and YS using cubic splines, with X as the
+interpolation input."
   (flet ((cubic (x ai bi ci di xi)
            (let ((ti `(- ,x ,xi)))
              `(+ ,ai
@@ -114,5 +123,7 @@ RESULT-SEQUENCES is set to the corresponding return value."
             collecting `((< ,x ,max) ,(apply #'cubic x poly))))))
 
 (defun cubic-spline-function (xs ys)
+  "Generate a function which interpolates between the points specified
+by XS and YS using cubic splines."
   (let ((x (make-symbol "X")))
     (compile nil `(lambda (,x) ,(cubic-spline-body x xs ys)))))
