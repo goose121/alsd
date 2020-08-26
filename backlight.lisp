@@ -24,44 +24,35 @@
 (defparameter *max-backlight-path*
   "/sys/class/backlight/intel_backlight/max_brightness")
 
-(defparameter *hex-digits*
-  (loop for i from 0 to 15 collecting (elt (write-to-string i :base 16) 0)))
-(defun hex-digit-p (char)
-  (member (char-upcase char) *hex-digits*))
 
 (defun read-acpi-package (stream)
-  "Read an ACPI package representation from STREAM. Note that this
-supports any of the usual Lisp syntax, only modifying the current
-readtable enough to make ACPI package representations parse; thus, it
-should NOT be used on untrusted data without prior readtable
-modification. We use it here because there are bigger problems than
-the takeover of a backlight daemon if sysfs is not trusted."
-  (let ((*readtable* (copy-readtable))
-        (*read-base* 16))
-    ;; Define the square-bracket characters as list delimiters
-    (set-macro-character #\[
-                         (lambda (stream char)
-                           (declare (ignore char))
-                           (read-delimited-list #\] stream t)))
-    (set-macro-character #\] (get-macro-character #\) nil))
-    ;; Define comma as a whitespace character
-    (set-syntax-from-char #\, #\Space)
-    ;; Allow the 0x hex numbers to work; make this non-terminating so
-    ;; it doesn't interrupt the numeric tokens when a hex number
-    ;; contains 0
-    (set-macro-character #\0
-                         (lambda (stream char)
-                           (if (eql (peek-char nil stream nil nil) #\x)
-                               (read-char stream)
-                               (unread-char char stream))
-                           (let ((*readtable* (copy-readtable)))
-                             ;; Prevent zeroes from being interpreted
-                             ;; when reading something after 0x;
-                             ;; 0x0xab is not valid
-                             (set-syntax-from-char #\0 #\1)
-                             (read stream)))
-                         t)
-    (read stream)))
+  "Read an ACPI package representation from STREAM, where each package
+is a list of comma-separated integers and other packages delimited by
+square brackets."
+  (let ((char (peek-char nil stream)))
+   (cond
+     ((char= char #\[)
+      (read-char stream)
+      (loop with next-char
+            collect (read-acpi-package stream)
+            do (setf next-char (read-char stream))
+            until (char= next-char #\])
+            do (assert (char= next-char #\,)
+                       ()
+                       "Expected comma separating package elements, found ~S"
+                       next-char)
+               (peek-char t stream)))
+     ((digit-char-p char)
+      (loop for next-char = char then (peek-char nil stream nil)
+            for next-digit = (and next-char (digit-char-p next-char))
+            while next-digit
+            for num = next-digit then (+ (* num 10) next-digit)
+            ;; Only remove the character from the stream if it is a
+            ;; digit
+            do (read-char stream)
+            finally (return num)))
+     (t
+      (error "Expecting package literal or integer, found ~S" char)))))
 
 (defun read-alr ()
   "Reads the ALR table and returns it as a two-item list, containing
