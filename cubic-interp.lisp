@@ -111,11 +111,14 @@ d(x - xi)^3 is denoted by a list (A B C D XI)."
 points specified by XS and YS using cubic splines, with X as the
 interpolation input."
   (flet ((cubic (x ai bi ci di xi)
-           (let ((ti `(- ,x ,xi)))
-             `(+ ,ai
-                 (* ,bi ,ti)
-                 (* ,ci (expt ,ti 2))
-                 (* ,di (expt ,ti 3))))))
+           (let ((ti (gensym "TI")))
+             `(let ((,ti (- ,x ,xi)))
+                ;; Evaluate ai + bi*ti + ci*ti^2 + di*ti^3 using
+                ;; Horner's method
+                (+ ,ai
+                   (* ,ti (+ ,bi
+                             (* ,ti (+ ,ci
+                                       (* ,ti ,di))))))))))
     `(cond
        ,@(loop
             for poly in (cubic-spline-coeffs xs ys)
