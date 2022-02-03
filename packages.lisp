@@ -14,6 +14,6 @@
 ;; along with alsd. If not, see <https://www.gnu.org/licenses/>.
 
 (defpackage alsd
-  (:use #:cl #:cl-arrows #:anaphora #:iolib)
+  (:use #:cl #:anaphora #:iolib)
   (:export #:start-daemon
            #:entry-point))

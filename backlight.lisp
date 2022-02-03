@@ -65,15 +65,16 @@ square brackets."
   "Read the ALR table and return it as a two-item list, containing
 first a vector of ALS readings, then a vector of their corresponding
 backlight adjustment percentages."
-  (->> (with-open-file (alr-file *alr-path*)
-         (read-acpi-package alr-file))
-       ;; Rotate the 2d list 90 degrees, turning the list of points
-       ;; into the two vectors
-       (apply #'mapcar #'vector)
-       ;; Reverse their order; bafflingly, the ACPI spec seems to
-       ;; treat backlight as the manipulated and ALI as the responding
-       ;; variable, including in the ordering of ALR entries.
-       nreverse))
+  ;; Reverse the order of the backlight and ALI lists; bafflingly, the
+  ;; ACPI spec seems to treat backlight as the manipulated and ALI as
+  ;; the responding variable, including in the ordering of ALR
+  ;; entries.
+  (nreverse
+   ;; Rotate the 2d list 90 degrees, turning the list of points
+   ;; into the two vectors
+   (apply #'mapcar #'vector
+          (with-open-file (alr-file *alr-path*)
+            (read-acpi-package alr-file)))))
 
 ;;; TODO: Either remove *alr* and update-alr altogether, or make them
 ;;; update *als-interpolation-func* appropriately somehow.
@@ -109,11 +110,7 @@ it."
   (with-open-file (backlight-file *backlight-path*
                                   :direction :output
                                   :if-exists :append)
-    (->> value
-         round
-         (max 0)
-         (min (max-backlight))
-         (format backlight-file "~a")))
+    (format backlight-file "~a" (min (max-backlight) (max 0 (round value)))))
   nil)
 
 (defun get-ali ()
