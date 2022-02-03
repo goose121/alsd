@@ -23,7 +23,8 @@
 (defvar *helper-process*)
 
 (defun stop-helper ()
-  (external-program:signal-process *helper-process* :hangup))
+  (when (eql :running (external-program:process-status *helper-process*))
+    (external-program:signal-process *helper-process* :hangup)))
 
 (defun start-helper (helper-path)
   (setf *helper-process*
