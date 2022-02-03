@@ -57,9 +57,10 @@ ARGS to ENSURE-SOCKET."
           ,@body)
      (close ,socket)))
 
-(defun handle-ipc (run-with-socket)
+(defun handle-ipc (run-with-socket cleanup)
   "Handle IPC requests in a loop. Once the socket is open, run the
-function RUN-WITH-SOCKET."
+function RUN-WITH-SOCKET, and run CLEANUP to clean up any resources
+from RUN-WITH-SOCKET."
   ;; Cache the max backlight value because the cache isn't thread-safe
   (max-backlight)
   (catch 'exit
@@ -80,6 +81,7 @@ function RUN-WITH-SOCKET."
                        (shutdown client :read t :write t)
                        (close client)))
                  (error (err) (format *error-output* "~A~%" err))))
+          (funcall cleanup)
           ;; Set user brightness to a non-zero value before exiting to
           ;; avoid leaving the user with a dark screen and no way to
           ;; fix it

@@ -42,7 +42,9 @@
   "Do everything required to start up the daemon."
   (setup-alsd)
   (update-screen)
-  (handle-ipc (lambda () (start-helper helper-path))))
+  (handle-ipc
+   (lambda () (start-helper helper-path))
+   (lambda () (stop-helper))))
 
 (defun entry-point ()
   "Parse the command-line arguments and start the daemon; at present,
