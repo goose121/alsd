@@ -44,6 +44,9 @@ account."
         (let ((new-brightness (+ *user-brightness-percent* (second req))))
           (unless (< new-brightness 0)
             (setf *user-brightness-percent* new-brightness))))
+       (set-brightness
+        (unless (< (second req) 0)
+          (setf *user-brightness-percent* (second req))))
        ((stop exit quit) (throw 'exit (values)))
        (otherwise (error "Invalid IPC operation ~s" (first req)))))
     (update-screen)))
