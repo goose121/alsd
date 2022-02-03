@@ -41,7 +41,9 @@ account."
      (case (first req)
        (update-screen t)
        (adjust-brightness
-        (incf *user-brightness-percent* (second req)))
+        (let ((new-brightness (+ *user-brightness-percent* (second req))))
+          (unless (< new-brightness 0)
+            (setf *user-brightness-percent* new-brightness))))
        ((stop exit quit) (throw 'exit (values)))
        (otherwise (error "Invalid IPC operation ~s" (first req)))))
     (update-screen)))
@@ -69,11 +71,18 @@ function RUN-WITH-SOCKET."
                                      :abstract t)
         (listen-on ctl-socket :backlog 5)
         (funcall run-with-socket)
-        (loop
-           (handler-case
-               (let ((client (accept-connection ctl-socket :wait t)))
-                 (unwind-protect (handle-client client)
-                   (finish-output client)
-                   (shutdown client :read t :write t)
-                   (close client)))
-             (error (err) (format *error-output* "~A~%" err))))))))
+        (unwind-protect
+             (loop
+               (handler-case
+                   (let ((client (accept-connection ctl-socket :wait t)))
+                     (unwind-protect (handle-client client)
+                       (finish-output client)
+                       (shutdown client :read t :write t)
+                       (close client)))
+                 (error (err) (format *error-output* "~A~%" err))))
+          ;; Set user brightness to a non-zero value before exiting to
+          ;; avoid leaving the user with a dark screen and no way to
+          ;; fix it
+          (when (= *user-brightness-percent* 0)
+            (setf *user-brightness-percent* 5)
+            (update-screen)))))))
