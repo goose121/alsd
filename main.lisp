@@ -34,7 +34,7 @@
          :status-hook
          (lambda (proc)
            (declare (ignore proc))
-           (format *error-output* "Warning: helper process exited~%"))))
+           (warn "ALSD helper process exited"))))
   (exit-hooks:add-exit-hook #'stop-helper))
 
 (defun start-daemon (helper-path)
