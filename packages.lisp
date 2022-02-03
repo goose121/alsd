@@ -17,3 +17,10 @@
   (:use #:cl #:anaphora #:iolib)
   (:export #:start-daemon
            #:entry-point))
+
+(defpackage alsd/log
+  (:export #:alsd
+           #:fatal
+           #:error
+           #:warning
+           #:ipc))

@@ -40,23 +40,49 @@
 
 (defun start-daemon (helper-path)
   "Do everything required to start up the daemon."
-  (setup-alsd)
-  (update-screen)
-  (handle-ipc
-   (lambda () (start-helper helper-path))
-   (lambda () (stop-helper))))
+  (handler-bind
+      ((serious-condition
+         (lambda (c)
+           (cl-log:log-message '(alsd/log:alsd alsd/log:fatal) "~A" c)
+           (abort)))
+       (warning
+         (lambda (c)
+           (cl-log:log-message '(alsd/log:alsd alsd/log:warning) "~A" c)
+           (muffle-warning c))))
+    (setup-alsd)
+    (update-screen)
+    (handle-ipc
+     (lambda () (start-helper helper-path))
+     (lambda () (stop-helper)))))
 
 (defun entry-point ()
   "Parse the command-line arguments and start the daemon; at present,
 only the first argument (the path to the helper) is used."
   (setf uiop/image:*lisp-interaction* nil)
-  (handler-bind
-      ((serious-condition #'(lambda (c)
-                              (uiop/image:die -1 "~a" c))))
-    (let ((args (uiop:command-line-arguments)))
-      (unless (= (length args) 1)
-        (error
-         "Incorrect number of arguments~@
-          Usage: ~a <helper-path>~%"
-         (uiop/image:argv0)))
-      (start-daemon (parse-namestring (nth 1 args))))))
+  (restart-case
+      (let ((args (uiop:command-line-arguments)))
+        (setf (cl-log:log-manager)
+              (make-instance
+               'cl-log:log-manager
+               :message-class 'cmdline-message))
+        (cl-log:start-messenger
+         'cl-log:text-stream-messenger
+         :stream *error-output*
+         :filter 'alsd/log:error)
+        (handler-bind
+            ((serious-condition
+               (lambda (c)
+                 (cl-log:log-message '(alsd/log:alsd alsd/log:fatal) "~A" c)
+                 (abort))))
+          (unless (= (length args) 1)
+            (error
+             "Incorrect number of arguments~@
+              Usage: ~a <helper-path>"
+             (uiop/image:argv0)))
+          (start-daemon
+           (handler-case (parse-namestring (first args))
+             (parse-error ()
+               (error "Invalid helper path ~A" (first args)))))))
+    (abort ()
+      :report "Abort the process."
+      (uiop/image:quit -1))))

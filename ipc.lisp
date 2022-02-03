@@ -77,13 +77,17 @@ from RUN-WITH-SOCKET."
         (funcall run-with-socket)
         (unwind-protect
              (loop
-               (handler-case
-                   (let ((client (accept-connection ctl-socket :wait t)))
-                     (unwind-protect (handle-client client)
-                       (finish-output client)
-                       (shutdown client :read t :write t)
-                       (close client)))
-                 (error (err) (format *error-output* "~A~%" err))))
+              (with-simple-restart (abort "Abort handling the current IPC connection.")
+                (handler-bind
+                    ((error
+                       (lambda (c)
+                         (cl-log:log-message '(alsd/log:alsd alsd/log:ipc alsd/log:error) "~A" c)
+                         (abort))))
+                  (let ((client (accept-connection ctl-socket :wait t)))
+                    (unwind-protect (handle-client client)
+                      (finish-output client)
+                      (shutdown client :read t :write t)
+                      (close client))))))
           (funcall cleanup)
           ;; Set user brightness to a non-zero value before exiting to
           ;; avoid leaving the user with a dark screen and no way to

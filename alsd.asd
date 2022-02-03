@@ -25,12 +25,14 @@
                #:iolib
                #:bordeaux-threads
                #:unix-opts
+               #:cl-log
   :components ((:file "packages")
+               (:file "log-defs")
                (:file "cubic-interp" :depends-on ("packages"))
                (:file "backlight" :depends-on ("packages"))
-               (:file "ipc" :depends-on ("backlight" "packages"))
+               (:file "ipc" :depends-on ("backlight" "log-defs" "packages"))
                (:file "main" :depends-on
-                      ("cubic-interp" "backlight" "ipc" "packages")))
+                      ("cubic-interp" "backlight" "log-defs" "ipc" "packages")))
   :build-operation "program-op" ;; leave as is
   :build-pathname "alsd"
   :entry-point "alsd:entry-point")
